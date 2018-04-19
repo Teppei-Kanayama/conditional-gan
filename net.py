@@ -34,7 +34,7 @@ class Generator(chainer.Chain):
             #                   initialW=w)
             self.l0 = L.Linear(self.n_hidden, bottom_width * bottom_width * ch,
                                initialW=w)
-            self.dc1 = L.Deconvolution2D(ch, ch // 2, 4, 2, 1, initialW=w)
+            self.dc1 = L.Deconvolution2D(ch + 10, ch // 2, 4, 2, 1, initialW=w)
             self.dc2 = L.Deconvolution2D(ch // 2, ch // 4, 4, 2, 1, initialW=w)
             self.dc3 = L.Deconvolution2D(ch // 4, ch // 8, 4, 2, 1, initialW=w)
             self.dc4 = L.Deconvolution2D(ch // 8, 3, 3, 1, 1, initialW=w)
@@ -52,14 +52,17 @@ class Generator(chainer.Chain):
         batchsize = len(z)
 
         # concatenate label as one hot vector
-        # one_hot = xp.zeros((batchsize, 10))
-        # one_hot[xp.arange(batchsize), label] = 1
-        # one_hot = one_hot[:, :, xp.newaxis, xp.newaxis]
-        # z_data = xp.concatenate((z.data, one_hot), axis=1)
-        # z = Variable(z_data.astype(xp.float32))
+        one_hot = xp.zeros((batchsize, 10))
+        one_hot[xp.arange(batchsize), label] = 1
+        one_hot = one_hot[:, :, xp.newaxis, xp.newaxis]
+        one_hot = xp.broadcast_to(one_hot, (batchsize, 10, 4, 4)).astype(xp.float32)
+        one_hot = Variable(one_hot)
 
         h = F.reshape(F.relu(self.bn0(self.l0(z))),
                       (len(z), self.ch, self.bottom_width, self.bottom_width))
+
+        h = F.concat((h, one_hot))
+
         h = F.relu(self.bn1(self.dc1(h)))
         h = F.relu(self.bn2(self.dc2(h)))
         h = F.relu(self.bn3(self.dc3(h)))
@@ -97,12 +100,12 @@ class Discriminator(chainer.Chain):
         batchsize = len(x)
 
         # concatenate label as one hot vector
-        # one_hot = xp.zeros((batchsize, 10))
-        # one_hot[xp.arange(batchsize), label] = 1
-        # one_hot = one_hot[:, :, xp.newaxis, xp.newaxis]
-        # one_hot = xp.broadcast_to(one_hot, (batchsize, 10, 32, 32))
-        # x_data = xp.concatenate((x.data, one_hot), axis=1)
-        # x = Variable(x_data.astype(xp.float32))
+        one_hot = xp.zeros((batchsize, 10))
+        one_hot[xp.arange(batchsize), label] = 1
+        one_hot = one_hot[:, :, xp.newaxis, xp.newaxis]
+        one_hot = xp.broadcast_to(one_hot, (batchsize, 10, 32, 32))
+        x_data = xp.concatenate((x.data, one_hot), axis=1)
+        #x = Variable(x_data.astype(xp.float32))
 
         h = add_noise(x)
         h = F.leaky_relu(add_noise(self.c0_0(h)))

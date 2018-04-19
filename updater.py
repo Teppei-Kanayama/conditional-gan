@@ -43,7 +43,7 @@ class DCGANUpdater(chainer.training.StandardUpdater):
         #pdb.set_trace()
         in_array = self.converter(batch, self.device)
         images = in_array[0]
-        labels = in_array[1] * 0
+        labels = in_array[1]
 
         x_real = Variable(images) / 255.
         xp = chainer.cuda.get_array_module(x_real.data)
@@ -62,7 +62,7 @@ class DCGANUpdater(chainer.training.StandardUpdater):
         # calculate the probability of real
         y_fake = dis(x_fake, labels)
 
-        rand_num = random.randint(0, 10)
-        if rand_num == 1 or True:
+        rand_num = random.randint(0, 0)
+        if rand_num == 0:
             dis_optimizer.update(self.loss_dis, dis, y_fake, y_real)
         gen_optimizer.update(self.loss_gen, gen, y_fake)
