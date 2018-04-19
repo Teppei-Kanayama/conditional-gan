@@ -48,6 +48,7 @@ class Generator(chainer.Chain):
     def __call__(self, z, label):
         xp = cuda.get_array_module(label)
         batchsize = len(z)
+
         # concatenate label as one hot vector
         one_hot = xp.zeros((batchsize, 10))
         one_hot[xp.arange(batchsize), label] = 1
@@ -70,7 +71,7 @@ class Discriminator(chainer.Chain):
         w = chainer.initializers.Normal(wscale)
         super(Discriminator, self).__init__()
         with self.init_scope():
-            self.c0_0 = L.Convolution2D(3, ch // 8, 3, 1, 1, initialW=w)
+            self.c0_0 = L.Convolution2D(3 + 10, ch // 8, 3, 1, 1, initialW=w)
             self.c0_1 = L.Convolution2D(ch // 8, ch // 4, 4, 2, 1, initialW=w)
             self.c1_0 = L.Convolution2D(ch // 4, ch // 4, 3, 1, 1, initialW=w)
             self.c1_1 = L.Convolution2D(ch // 4, ch // 2, 4, 2, 1, initialW=w)
@@ -87,6 +88,17 @@ class Discriminator(chainer.Chain):
 
     def __call__(self, x, label):
         #pdb.set_trace()
+
+        xp = cuda.get_array_module(label)
+        batchsize = len(x)
+
+        # concatenate label as one hot vector
+        one_hot = xp.zeros((batchsize, 10))
+        one_hot[xp.arange(batchsize), label] = 1
+        one_hot = one_hot[:, :, xp.newaxis, xp.newaxis]
+        one_hot = xp.broadcast_to(one_hot, (batchsize, 10, 32, 32))
+        x_data = xp.concatenate((x.data, one_hot), axis=1)
+        x = Variable(x_data.astype(xp.float32))
 
         h = add_noise(x)
         h = F.leaky_relu(add_noise(self.c0_0(h)))

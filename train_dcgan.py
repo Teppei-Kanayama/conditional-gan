@@ -32,7 +32,7 @@ def main():
                         help='GPU ID (negative value indicates CPU)')
     parser.add_argument('--dataset', '-i', default='',
                         help='Directory of image files.  Default is cifar-10.')
-    parser.add_argument('--out', '-o', default='result',
+    parser.add_argument('--out', '-o', default='/data/unagi0/kanayama/dataset/dcgan-cifar/result_conditional',
                         help='Directory to output the result')
     parser.add_argument('--resume', '-r', default='',
                         help='Resume the training from snapshot')
@@ -40,7 +40,7 @@ def main():
                         help='Number of hidden units (z)')
     parser.add_argument('--seed', type=int, default=0,
                         help='Random seed of z at visualization stage')
-    parser.add_argument('--snapshot_interval', type=int, default=1000,
+    parser.add_argument('--snapshot_interval', type=int, default=10000,
                         help='Interval of snapshot')
     parser.add_argument('--display_interval', type=int, default=100,
                         help='Interval of displaying log to console')

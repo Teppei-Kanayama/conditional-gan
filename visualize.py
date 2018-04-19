@@ -18,7 +18,6 @@ def out_generated_image(gen, dis, rows, cols, seed, dst):
         xp = gen.xp
         z = Variable(xp.asarray(gen.make_hidden(n_images)))
         with chainer.using_config('train', False):
-            #pdb.set_trace()
             batchsize = len(z)
             label = xp.ones((batchsize,), dtype=xp.uint8)
             x = gen(z, label)
