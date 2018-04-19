@@ -8,7 +8,7 @@ from PIL import Image
 import chainer
 import chainer.cuda
 from chainer import Variable
-
+import pdb
 
 def out_generated_image(gen, dis, rows, cols, seed, dst):
     @chainer.training.make_extension()
@@ -18,7 +18,10 @@ def out_generated_image(gen, dis, rows, cols, seed, dst):
         xp = gen.xp
         z = Variable(xp.asarray(gen.make_hidden(n_images)))
         with chainer.using_config('train', False):
-            x = gen(z)
+            #pdb.set_trace()
+            batchsize = len(z)
+            label = xp.ones((batchsize,), dtype=xp.uint8)
+            x = gen(z, label)
         x = chainer.cuda.to_cpu(x.data)
         np.random.seed()
 

@@ -9,6 +9,8 @@ from chainer import cuda
 import chainer.functions as F
 import chainer.links as L
 
+from chainer import Variable
+import pdb
 
 def add_noise(h, sigma=0.2):
     xp = cuda.get_array_module(h.data)
@@ -28,7 +30,7 @@ class Generator(chainer.Chain):
 
         with self.init_scope():
             w = chainer.initializers.Normal(wscale)
-            self.l0 = L.Linear(self.n_hidden, bottom_width * bottom_width * ch,
+            self.l0 = L.Linear(self.n_hidden + 10, bottom_width * bottom_width * ch,
                                initialW=w)
             self.dc1 = L.Deconvolution2D(ch, ch // 2, 4, 2, 1, initialW=w)
             self.dc2 = L.Deconvolution2D(ch // 2, ch // 4, 4, 2, 1, initialW=w)
@@ -44,6 +46,15 @@ class Generator(chainer.Chain):
             .astype(numpy.float32)
 
     def __call__(self, z, label):
+        xp = cuda.get_array_module(label)
+        batchsize = len(z)
+        # concatenate label as one hot vector
+        one_hot = xp.zeros((batchsize, 10))
+        one_hot[xp.arange(batchsize), label] = 1
+        one_hot = one_hot[:, :, xp.newaxis, xp.newaxis]
+        z_data = xp.concatenate((z.data, one_hot), axis=1)
+        z = Variable(z_data.astype(xp.float32))
+
         h = F.reshape(F.relu(self.bn0(self.l0(z))),
                       (len(z), self.ch, self.bottom_width, self.bottom_width))
         h = F.relu(self.bn1(self.dc1(h)))
@@ -75,6 +86,8 @@ class Discriminator(chainer.Chain):
             self.bn3_0 = L.BatchNormalization(ch // 1, use_gamma=False)
 
     def __call__(self, x, label):
+        #pdb.set_trace()
+
         h = add_noise(x)
         h = F.leaky_relu(add_noise(self.c0_0(h)))
         h = F.leaky_relu(add_noise(self.bn0_1(self.c0_1(h))))
