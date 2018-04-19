@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 
+#import sys
+#sys.path.append('/home/mil/kanayama/tmp/pycharm-debug-py3k.egg')
+
+#import pydevd
+#pydevd.settrace(192.168.172.23, port=21000, stdoutToServer=True, stderrToServer=True)
+
 from __future__ import print_function
 import argparse
 import os
@@ -12,6 +18,8 @@ from net import Discriminator
 from net import Generator
 from updater import DCGANUpdater
 from visualize import out_generated_image
+
+import pdb
 
 
 def main():
@@ -65,7 +73,8 @@ def main():
 
     if args.dataset == '':
         # Load the CIFAR10 dataset if args.dataset is not specified
-        train, _ = chainer.datasets.get_cifar10(withlabel=False, scale=255.)
+        train, _ = chainer.datasets.get_cifar10(withlabel=True, scale=255.)
+
     else:
         all_files = os.listdir(args.dataset)
         image_files = [f for f in all_files if ('png' in f or 'jpg' in f)]
