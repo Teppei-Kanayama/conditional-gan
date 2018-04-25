@@ -1,11 +1,5 @@
 #!/usr/bin/env python
 
-#import sys
-#sys.path.append('/home/mil/kanayama/tmp/pycharm-debug-py3k.egg')
-
-#import pydevd
-#pydevd.settrace(192.168.172.23, port=21000, stdoutToServer=True, stderrToServer=True)
-
 from __future__ import print_function
 import argparse
 import os
@@ -18,9 +12,8 @@ from net import Discriminator
 from net import Generator
 from updater import DCGANUpdater
 from visualize import out_generated_image
-
 import pdb
-
+import numpy as np
 
 def main():
     parser = argparse.ArgumentParser(description='Chainer example: DCGAN')
@@ -32,7 +25,7 @@ def main():
                         help='GPU ID (negative value indicates CPU)')
     parser.add_argument('--dataset', '-i', default='',
                         help='Directory of image files.  Default is cifar-10.')
-    parser.add_argument('--out', '-o', default='/data/unagi0/kanayama/dataset/dcgan-cifar/result1',
+    parser.add_argument('--out', '-o', default='/data/unagi0/kanayama/dataset/dcgan-cifar/result3',
                         help='Directory to output the result')
     parser.add_argument('--resume', '-r', default='',
                         help='Resume the training from snapshot')
@@ -40,7 +33,7 @@ def main():
                         help='Number of hidden units (z)')
     parser.add_argument('--seed', type=int, default=0,
                         help='Random seed of z at visualization stage')
-    parser.add_argument('--snapshot_interval', type=int, default=10000,
+    parser.add_argument('--snapshot_interval', type=int, default=1000,
                         help='Interval of snapshot')
     parser.add_argument('--display_interval', type=int, default=100,
                         help='Interval of displaying log to console')
@@ -73,7 +66,9 @@ def main():
 
     if args.dataset == '':
         # Load the CIFAR10 dataset if args.dataset is not specified
-        train, _ = chainer.datasets.get_cifar10(withlabel=True, scale=255.)
+        train, _ = chainer.datasets.get_cifar10(withlabel=False, scale=255.)
+        train = train[:64]
+        #pdb.set_trace()
 
     else:
         all_files = os.listdir(args.dataset)
