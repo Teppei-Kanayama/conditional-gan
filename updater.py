@@ -62,7 +62,7 @@ class DCGANUpdater(chainer.training.StandardUpdater):
         # calculate the probability of real
         y_fake = dis(x_fake, labels)
 
-        rand_num = random.randint(0, 0)
+        rand_num = random.randint(0, 1)
         if rand_num == 0:
             dis_optimizer.update(self.loss_dis, dis, y_fake, y_real)
         gen_optimizer.update(self.loss_gen, gen, y_fake)
