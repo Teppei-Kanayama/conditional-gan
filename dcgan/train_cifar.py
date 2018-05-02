@@ -67,8 +67,7 @@ def main():
     if args.dataset == '':
         # Load the CIFAR10 dataset if args.dataset is not specified
         train, _ = chainer.datasets.get_cifar10(withlabel=False, scale=255.)
-        train = train[:64]
-        #pdb.set_trace()
+        #train = train[:64]
 
     else:
         all_files = os.listdir(args.dataset)

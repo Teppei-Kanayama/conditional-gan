@@ -1,11 +1,5 @@
 #!/usr/bin/env python
 
-#import sys
-#sys.path.append('/home/mil/kanayama/tmp/pycharm-debug-py3k.egg')
-
-#import pydevd
-#pydevd.settrace(192.168.172.23, port=21000, stdoutToServer=True, stderrToServer=True)
-
 from __future__ import print_function
 import argparse
 import os
@@ -18,21 +12,38 @@ from net import Discriminator
 from net import Generator
 from updater import DCGANUpdater
 from visualize import out_generated_image
-
 import pdb
+import numpy as np
+import cv2
+import cProfile
+
+class PreprocessedDataset(chainer.dataset.DatasetMixin):
+
+    def __init__(self, path, root):
+        self.base = chainer.datasets.ImageDataset(path, root)
+
+    def __len__(self):
+        return len(self.base)
+
+    def get_example(self, i):
+        image = self.base[i]
+        image = image.transpose((1, 2, 0))
+        image = cv2.resize(image, (32, 32))
+        image = image.transpose((2, 0, 1)).astype(np.float32)
+        return image
 
 
 def main():
     parser = argparse.ArgumentParser(description='Chainer example: DCGAN')
     parser.add_argument('--batchsize', '-b', type=int, default=50,
                         help='Number of images in each mini-batch')
-    parser.add_argument('--epoch', '-e', type=int, default=1000,
+    parser.add_argument('--epoch', '-e', type=int, default=10000,
                         help='Number of sweeps over the dataset to train')
     parser.add_argument('--gpu', '-g', type=int, default=-1,
                         help='GPU ID (negative value indicates CPU)')
-    parser.add_argument('--dataset', '-i', default='',
+    parser.add_argument('--train', '-i', default='/data/unagi0/kanayama/dataset/landmark/train1000.txt',
                         help='Directory of image files.  Default is cifar-10.')
-    parser.add_argument('--out', '-o', default='/data/unagi0/kanayama/dataset/dcgan-cifar/result1',
+    parser.add_argument('--out', '-o', default='/data/unagi0/kanayama/dataset/landmark/results/result0/',
                         help='Directory to output the result')
     parser.add_argument('--resume', '-r', default='',
                         help='Resume the training from snapshot')
@@ -40,10 +51,13 @@ def main():
                         help='Number of hidden units (z)')
     parser.add_argument('--seed', type=int, default=0,
                         help='Random seed of z at visualization stage')
-    parser.add_argument('--snapshot_interval', type=int, default=10000,
+    parser.add_argument('--snapshot_interval', type=int, default=1000,
                         help='Interval of snapshot')
     parser.add_argument('--display_interval', type=int, default=100,
                         help='Interval of displaying log to console')
+    parser.add_argument('--root', '-R', default='/data/unagi0/kanayama/dataset/landmark/train/',
+                        help='Root directory path of image files')
+
     args = parser.parse_args()
 
     print('GPU: {}'.format(args.gpu))
@@ -71,10 +85,12 @@ def main():
     opt_gen = make_optimizer(gen)
     opt_dis = make_optimizer(dis)
 
+    """
     if args.dataset == '':
         # Load the CIFAR10 dataset if args.dataset is not specified
-        train, _ = chainer.datasets.get_cifar10(withlabel=True, scale=255.)
-        pdb.set_trace()
+        train, _ = chainer.datasets.get_cifar10(withlabel=False, scale=255.)
+        train = train[:64]
+        #pdb.set_trace()
 
     else:
         all_files = os.listdir(args.dataset)
@@ -83,8 +99,11 @@ def main():
               .format(args.dataset, len(image_files)))
         train = chainer.datasets\
             .ImageDataset(paths=image_files, root=args.dataset)
+    """
 
-    train_iter = chainer.iterators.SerialIterator(train, args.batchsize)
+    train = PreprocessedDataset(args.train, args.root)
+
+    train_iter = chainer.iterators.MultiprocessIterator(train, args.batchsize)
 
     # Set up a trainer
     updater = DCGANUpdater(
@@ -124,4 +143,9 @@ def main():
 
 
 if __name__ == '__main__':
+    pr = cProfile.Profile()
+    pr.enable()
     main()
+    pr.disable()
+    pr.print_stats()
+    pr.dump_stats('fib.profile')
