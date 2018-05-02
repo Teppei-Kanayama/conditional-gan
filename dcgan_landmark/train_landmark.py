@@ -28,7 +28,7 @@ class PreprocessedDataset(chainer.dataset.DatasetMixin):
     def get_example(self, i):
         image = self.base[i]
         image = image.transpose((1, 2, 0))
-        image = cv2.resize(image, (32, 32))
+        image = cv2.resize(image, (256, 256))
         image = image.transpose((2, 0, 1)).astype(np.float32)
         return image
 
@@ -43,7 +43,7 @@ def main():
                         help='GPU ID (negative value indicates CPU)')
     parser.add_argument('--train', '-i', default='/data/unagi0/kanayama/dataset/landmark/train1000.txt',
                         help='Directory of image files.  Default is cifar-10.')
-    parser.add_argument('--out', '-o', default='/data/unagi0/kanayama/dataset/landmark/results/result0/',
+    parser.add_argument('--out', '-o', default='/data/unagi0/kanayama/dataset/landmark/results/result2/',
                         help='Directory to output the result')
     parser.add_argument('--resume', '-r', default='',
                         help='Resume the training from snapshot')
@@ -84,22 +84,6 @@ def main():
         return optimizer
     opt_gen = make_optimizer(gen)
     opt_dis = make_optimizer(dis)
-
-    """
-    if args.dataset == '':
-        # Load the CIFAR10 dataset if args.dataset is not specified
-        train, _ = chainer.datasets.get_cifar10(withlabel=False, scale=255.)
-        train = train[:64]
-        #pdb.set_trace()
-
-    else:
-        all_files = os.listdir(args.dataset)
-        image_files = [f for f in all_files if ('png' in f or 'jpg' in f)]
-        print('{} contains {} image files'
-              .format(args.dataset, len(image_files)))
-        train = chainer.datasets\
-            .ImageDataset(paths=image_files, root=args.dataset)
-    """
 
     train = PreprocessedDataset(args.train, args.root)
 
