@@ -8,7 +8,7 @@ import chainer
 from chainer import training
 from chainer.training import extensions
 
-from net import Discriminator
+from net import GlobalDiscriminator, LocalDiscriminator
 from net import Generator
 from updater import DCGANUpdater
 from visualize import out_generated_image
@@ -16,6 +16,7 @@ import pdb
 import numpy as np
 import cv2
 import cProfile
+
 
 class PreprocessedDataset(chainer.dataset.DatasetMixin):
 
@@ -33,6 +34,22 @@ class PreprocessedDataset(chainer.dataset.DatasetMixin):
         return image
 
 
+class PreprocessedDataset2(chainer.dataset.DatasetMixin):
+
+    def __init__(self, path, root):
+        self.base = chainer.datasets.ImageDataset(path, root)
+
+    def __len__(self):
+        return len(self.base)
+
+    def get_example(self, i):
+        image = self.base[i]
+        image = image.transpose((1, 2, 0))
+        image = cv2.resize(image, (64, 64))
+        image = image.transpose((2, 0, 1)).astype(np.float32)
+        return image
+
+
 def main():
     parser = argparse.ArgumentParser(description='Chainer example: DCGAN')
     parser.add_argument('--batchsize', '-b', type=int, default=50,
@@ -43,7 +60,7 @@ def main():
                         help='GPU ID (negative value indicates CPU)')
     parser.add_argument('--train', '-i', default='/data/unagi0/kanayama/dataset/landmark/train10000.txt',
                         help='Directory of image files.  Default is cifar-10.')
-    parser.add_argument('--out', '-o', default='/data/unagi0/kanayama/dataset/landmark/results/result2/',
+    parser.add_argument('--out', '-o', default='/data/unagi0/kanayama/dataset/landmark/results/result3/',
                         help='Directory to output the result')
     parser.add_argument('--resume', '-r', default='',
                         help='Resume the training from snapshot')
@@ -68,13 +85,15 @@ def main():
 
     # Set up a neural network to train
     gen = Generator(n_hidden=args.n_hidden)
-    dis = Discriminator()
+    global_dis = GlobalDiscriminator()
+    local_dis = LocalDiscriminator()
 
     if args.gpu >= 0:
         # Make a specified GPU current
         chainer.cuda.get_device_from_id(args.gpu).use()
         gen.to_gpu()  # Copy the model to the GPU
-        dis.to_gpu()
+        global_dis.to_gpu()
+        local_dis.to_gpu()
 
     # Setup an optimizer
     def make_optimizer(model, alpha=0.0002, beta1=0.5):
@@ -83,18 +102,22 @@ def main():
         optimizer.add_hook(chainer.optimizer.WeightDecay(0.0001), 'hook_dec')
         return optimizer
     opt_gen = make_optimizer(gen)
-    opt_dis = make_optimizer(dis)
+    opt_global_dis = make_optimizer(global_dis)
+    opt_local_dis = make_optimizer(local_dis)
 
     train = PreprocessedDataset(args.train, args.root)
+    patch = PreprocessedDataset2('/data/unagi0/kanayama/dataset/celeba.txt', '/data/unagi0/dataset/CelebA/Img/img_align_celeba/')
 
     train_iter = chainer.iterators.MultiprocessIterator(train, args.batchsize)
+    patch_iter = chainer.iterators.MultiprocessIterator(patch, args.batchsize)
 
     # Set up a trainer
     updater = DCGANUpdater(
-        models=(gen, dis),
-        iterator=train_iter,
+        models=(gen, global_dis, local_dis),
+        iterator={
+            'main': train_iter, 'patch': patch_iter},
         optimizer={
-            'gen': opt_gen, 'dis': opt_dis},
+            'gen': opt_gen, 'global_dis': opt_global_dis, 'local_dis': opt_local_dis},
         device=args.gpu)
     trainer = training.Trainer(updater, (args.epoch, 'epoch'), out=args.out)
 
@@ -106,7 +129,7 @@ def main():
     trainer.extend(extensions.snapshot_object(
         gen, 'gen_iter_{.updater.iteration}.npz'), trigger=snapshot_interval)
     trainer.extend(extensions.snapshot_object(
-        dis, 'dis_iter_{.updater.iteration}.npz'), trigger=snapshot_interval)
+        global_dis, 'dis_iter_{.updater.iteration}.npz'), trigger=snapshot_interval)
     trainer.extend(extensions.LogReport(trigger=display_interval))
     trainer.extend(extensions.PrintReport([
         'epoch', 'iteration', 'gen/loss', 'dis/loss',
@@ -114,7 +137,7 @@ def main():
     trainer.extend(extensions.ProgressBar(update_interval=10))
     trainer.extend(
         out_generated_image(
-            gen, dis,
+            gen, global_dis,
             10, 10, args.seed, args.out),
         trigger=snapshot_interval)
 
