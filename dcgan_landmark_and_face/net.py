@@ -59,7 +59,7 @@ class Generator(chainer.Chain):
         h4 = F.relu(self.bn4(self.dc4(h3)))
         h5 = F.relu(self.bn5(self.dc5(h4)))
         x = F.sigmoid(self.dc6(h5))
-        pdb.set_trace()
+        #pdb.set_trace()
         return x
 
 
@@ -120,9 +120,9 @@ class LocalDiscriminator(chainer.Chain):
         h = add_noise(x)
         h = F.leaky_relu(add_noise(self.c0_0(h)))
         h = F.leaky_relu(add_noise(self.bn0_1(self.c0_1(h))))
-        h = F.leaky_relu(add_noise(self.bn1_0(self.c1_0(h))))
+        #h = F.leaky_relu(add_noise(self.bn1_0(self.c1_0(h))))
         h = F.leaky_relu(add_noise(self.bn1_1(self.c1_1(h))))
-        h = F.leaky_relu(add_noise(self.bn2_0(self.c2_0(h))))
+        #h = F.leaky_relu(add_noise(self.bn2_0(self.c2_0(h))))
         h = F.leaky_relu(add_noise(self.bn2_1(self.c2_1(h))))
         h = F.leaky_relu(add_noise(self.bn3_0(self.c3_0(h))))
         #pdb.set_trace()
