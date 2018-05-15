@@ -29,8 +29,9 @@ class Generator(chainer.Chain):
 
         with self.init_scope():
             w = chainer.initializers.Normal(wscale)
-            self.l0 = L.Linear(self.n_hidden, bottom_width * bottom_width * ch,
-                               initialW=w)
+            #self.l0 = L.Linear(self.n_hidden, bottom_width * bottom_width * ch,
+            #                   initialW=w)
+            self.c0 = L.Convolution2D(6, ch, 3, 1, 1, initialW=w)
             self.dc1 = L.Deconvolution2D(ch, ch // 2, 4, 2, 1, initialW=w)
             self.dc2 = L.Deconvolution2D(ch // 2, ch // 4, 4, 2, 1, initialW=w)
             self.dc3 = L.Deconvolution2D(ch // 4, ch // 8, 4, 2, 1, initialW=w)
@@ -48,16 +49,17 @@ class Generator(chainer.Chain):
         return numpy.random.uniform(-1, 1, (batchsize, self.n_hidden, 1, 1))\
             .astype(numpy.float32)
 
-    def __call__(self, z):
-        h0 = F.reshape(F.relu(self.bn0(self.l0(z))),
-                      (len(z), self.ch, self.bottom_width, self.bottom_width))
+    def __call__(self, x):
+        h0 = F.max_pooling_2d(self.c0(x), 64, 64, 0) #要改変・U-Netっぽい感じがいいか
+        #h0 = F.reshape(F.relu(self.bn0(self.l0(z))),
+        #            (len(z), self.ch, self.bottom_width, self.bottom_width))
         h1 = F.relu(self.bn1(self.dc1(h0)))
         h2 = F.relu(self.bn2(self.dc2(h1)))
         h3 = F.relu(self.bn3(self.dc3(h2)))
         h4 = F.relu(self.bn4(self.dc4(h3)))
         h5 = F.relu(self.bn5(self.dc5(h4)))
         x = F.sigmoid(self.dc6(h5))
-        #pdb.set_trace()
+        pdb.set_trace()
         return x
 
 
@@ -91,7 +93,6 @@ class GlobalDiscriminator(chainer.Chain):
         h = F.leaky_relu(add_noise(self.bn2_0(self.c2_0(h))))
         h = F.leaky_relu(add_noise(self.bn2_1(self.c2_1(h))))
         h = F.leaky_relu(add_noise(self.bn3_0(self.c3_0(h))))
-        #pdb.set_trace()
         return self.l4(h)
 
 class LocalDiscriminator(chainer.Chain):

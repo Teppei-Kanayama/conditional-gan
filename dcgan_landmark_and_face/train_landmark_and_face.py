@@ -47,7 +47,9 @@ class PreprocessedDataset2(chainer.dataset.DatasetMixin):
         image = image.transpose((1, 2, 0))
         image = cv2.resize(image, (64, 64))
         image = image.transpose((2, 0, 1)).astype(np.float32)
-        return image
+        expand_image = np.zeros((3, 256, 256), dtype=np.float32)
+        expand_image[:, 30:94, 30:94] = image
+        return expand_image
 
 
 def main():
@@ -106,7 +108,7 @@ def main():
     opt_local_dis = make_optimizer(local_dis)
 
     train = PreprocessedDataset(args.train, args.root)
-    patch = PreprocessedDataset2('/data/unagi0/kanayama/dataset/celeba.txt', '/data/unagi0/dataset/CelebA/Img/img_align_celeba/')
+    patch = PreprocessedDataset2('/data/unagi0/kanayama/dataset/celeba.txt', '/data/ugui0/kanayama/celeba/')
 
     train_iter = chainer.iterators.MultiprocessIterator(train, args.batchsize)
     patch_iter = chainer.iterators.MultiprocessIterator(patch, args.batchsize)

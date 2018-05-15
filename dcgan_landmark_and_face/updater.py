@@ -39,6 +39,10 @@ class DCGANUpdater(chainer.training.StandardUpdater):
         #pdb.set_trace()
 
         x_real = Variable(self.converter(batch, self.device)) / 255.
+        x_patch = Variable(self.converter(patch, self.device)) / 255.
+
+        x_concat = F.concat((x_real, x_patch), axis=1)
+
         xp = chainer.cuda.get_array_module(x_real.data)
 
         gen, global_dis, local_dis = self.gen, self.global_dis, self.local_dis
@@ -47,7 +51,7 @@ class DCGANUpdater(chainer.training.StandardUpdater):
         y_real = global_dis(x_real)
 
         z = Variable(xp.asarray(gen.make_hidden(batchsize)))
-        x_fake = gen(z)
+        x_fake = gen(x_concat)
         y_fake = global_dis(x_fake)
 
         #rand_num = random.randint(0, 1)
