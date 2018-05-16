@@ -44,11 +44,11 @@ class Generator(chainer.Chain):
             self.c1_1 =  L.Convolution2D(512, 512, 3, 1, 1, initialW=w)
 
             self.dc1 = L.Deconvolution2D(ch, ch // 2, 4, 2, 1, initialW=w)
-            self.dc2 = L.Deconvolution2D(ch // 2, ch // 4, 4, 2, 1, initialW=w)
-            self.dc3 = L.Deconvolution2D(ch // 4, ch // 8, 4, 2, 1, initialW=w)
-            self.dc4 = L.Deconvolution2D(ch // 8, ch // 16, 4, 2, 1, initialW=w)
-            self.dc5 = L.Deconvolution2D(ch // 16, ch // 32, 4, 2, 1, initialW=w)
-            self.dc6 = L.Deconvolution2D(ch // 32, 3, 4, 2, 1, initialW=w)
+            self.dc2 = L.Deconvolution2D(ch // 2 * 2, ch // 4, 4, 2, 1, initialW=w)
+            self.dc3 = L.Deconvolution2D(ch // 4 * 2, ch // 8, 4, 2, 1, initialW=w)
+            self.dc4 = L.Deconvolution2D(ch // 8 * 2, ch // 16, 4, 2, 1, initialW=w)
+            self.dc5 = L.Deconvolution2D(ch // 16 * 2, ch // 32, 4, 2, 1, initialW=w)
+            self.dc6 = L.Deconvolution2D(ch // 32 * 2, 3, 4, 2, 1, initialW=w)
             self.bn0 = L.BatchNormalization(bottom_width * bottom_width * ch)
             self.bn1 = L.BatchNormalization(ch // 2)
             self.bn2 = L.BatchNormalization(ch // 4)
@@ -61,21 +61,30 @@ class Generator(chainer.Chain):
             .astype(numpy.float32)
 
     def __call__(self, x):
-        #h0 = F.max_pooling_2d(self.c0(x), 64, 64, 0) #要改変・U-Netっぽい感じがいいか
-        #h0 = F.reshape(F.relu(self.bn0(self.l0(z))),
-        #            (len(z), self.ch, self.bottom_width, self.bottom_width))
+        
         g5 = F.max_pooling_2d(F.relu(self.c6_1(F.dropout(F.relu(self.c6_0(x)), 0.2))), 2)
         g4 = F.max_pooling_2d(F.relu(self.c5_1(F.dropout(F.relu(self.c5_0(g5)), 0.2))), 2)
         g3 = F.max_pooling_2d(F.relu(self.c4_1(F.dropout(F.relu(self.c4_0(g4)), 0.2))), 2)
         g2 = F.max_pooling_2d(F.relu(self.c3_1(F.dropout(F.relu(self.c3_0(g3)), 0.2))), 2)
         g1 = F.max_pooling_2d(F.relu(self.c2_1(F.dropout(F.relu(self.c2_0(g2)), 0.2))), 2)
         h0 = F.max_pooling_2d(F.relu(self.c1_1(F.dropout(F.relu(self.c1_0(g1)), 0.2))), 2)
+
         h1 = F.relu(self.bn1(self.dc1(h0)))
-        h2 = F.relu(self.bn2(self.dc2(h1)))
-        h3 = F.relu(self.bn3(self.dc3(h2)))
-        h4 = F.relu(self.bn4(self.dc4(h3)))
-        h5 = F.relu(self.bn5(self.dc5(h4)))
-        x = F.sigmoid(self.dc6(h5))
+        i1 = F.concat((h1, g1), axis=1)
+
+        h2 = F.relu(self.bn2(self.dc2(i1)))
+        i2 = F.concat((h2, g2), axis=1)
+
+        h3 = F.relu(self.bn3(self.dc3(i2)))
+        i3 = F.concat((h3, g3), axis=1)
+
+        h4 = F.relu(self.bn4(self.dc4(i3)))
+        i4 = F.concat((h4, g4), axis=1)
+
+        h5 = F.relu(self.bn5(self.dc5(i4)))
+        i5 = F.concat((h5, g5), axis=1)
+
+        x = F.sigmoid(self.dc6(i5))
         #pdb.set_trace()
         return x
 
