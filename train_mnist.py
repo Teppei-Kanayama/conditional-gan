@@ -68,7 +68,7 @@ def main():
 
     # Load the MNIST dataset
     train, test = chainer.datasets.get_mnist()
-    pdb.set_trace()
+    #pdb.set_trace()
     train_iter = chainer.iterators.SerialIterator(train, args.batchsize)
     test_iter = chainer.iterators.SerialIterator(test, args.batchsize,
                                                  repeat=False, shuffle=False)
