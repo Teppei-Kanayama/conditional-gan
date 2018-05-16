@@ -29,9 +29,20 @@ class Generator(chainer.Chain):
 
         with self.init_scope():
             w = chainer.initializers.Normal(wscale)
-            #self.l0 = L.Linear(self.n_hidden, bottom_width * bottom_width * ch,
-            #                   initialW=w)
-            self.c0 = L.Convolution2D(6, ch, 3, 1, 1, initialW=w)
+            #self.c0 = L.Convolution2D(6, ch, 3, 1, 1, initialW=w)
+            self.c6_0 =  L.Convolution2D(6, 16, 3, 1, 1, initialW=w)
+            self.c6_1 =  L.Convolution2D(16, 16, 3, 1, 1, initialW=w)
+            self.c5_0 =  L.Convolution2D(16, 32, 3, 1, 1, initialW=w)
+            self.c5_1 =  L.Convolution2D(32, 32, 3, 1, 1, initialW=w)
+            self.c4_0 =  L.Convolution2D(32, 64, 3, 1, 1, initialW=w)
+            self.c4_1 =  L.Convolution2D(64, 64, 3, 1, 1, initialW=w)
+            self.c3_0 =  L.Convolution2D(64, 128, 3, 1, 1, initialW=w)
+            self.c3_1 =  L.Convolution2D(128, 128, 3, 1, 1, initialW=w)
+            self.c2_0 =  L.Convolution2D(128, 256, 3, 1, 1, initialW=w)
+            self.c2_1 =  L.Convolution2D(256, 256, 3, 1, 1, initialW=w)
+            self.c1_0 =  L.Convolution2D(256, 512, 3, 1, 1, initialW=w)
+            self.c1_1 =  L.Convolution2D(512, 512, 3, 1, 1, initialW=w)
+
             self.dc1 = L.Deconvolution2D(ch, ch // 2, 4, 2, 1, initialW=w)
             self.dc2 = L.Deconvolution2D(ch // 2, ch // 4, 4, 2, 1, initialW=w)
             self.dc3 = L.Deconvolution2D(ch // 4, ch // 8, 4, 2, 1, initialW=w)
@@ -50,9 +61,15 @@ class Generator(chainer.Chain):
             .astype(numpy.float32)
 
     def __call__(self, x):
-        h0 = F.max_pooling_2d(self.c0(x), 64, 64, 0) #要改変・U-Netっぽい感じがいいか
+        #h0 = F.max_pooling_2d(self.c0(x), 64, 64, 0) #要改変・U-Netっぽい感じがいいか
         #h0 = F.reshape(F.relu(self.bn0(self.l0(z))),
         #            (len(z), self.ch, self.bottom_width, self.bottom_width))
+        g5 = F.max_pooling_2d(F.relu(self.c6_1(F.dropout(F.relu(self.c6_0(x)), 0.2))), 2)
+        g4 = F.max_pooling_2d(F.relu(self.c5_1(F.dropout(F.relu(self.c5_0(g5)), 0.2))), 2)
+        g3 = F.max_pooling_2d(F.relu(self.c4_1(F.dropout(F.relu(self.c4_0(g4)), 0.2))), 2)
+        g2 = F.max_pooling_2d(F.relu(self.c3_1(F.dropout(F.relu(self.c3_0(g3)), 0.2))), 2)
+        g1 = F.max_pooling_2d(F.relu(self.c2_1(F.dropout(F.relu(self.c2_0(g2)), 0.2))), 2)
+        h0 = F.max_pooling_2d(F.relu(self.c1_1(F.dropout(F.relu(self.c1_0(g1)), 0.2))), 2)
         h1 = F.relu(self.bn1(self.dc1(h0)))
         h2 = F.relu(self.bn2(self.dc2(h1)))
         h3 = F.relu(self.bn3(self.dc3(h2)))
