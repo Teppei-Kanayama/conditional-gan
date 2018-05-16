@@ -62,7 +62,7 @@ def main():
                         help='GPU ID (negative value indicates CPU)')
     parser.add_argument('--train', '-i', default='/data/unagi0/kanayama/dataset/landmark/train10000.txt',
                         help='Directory of image files.  Default is cifar-10.')
-    parser.add_argument('--out', '-o', default='/data/unagi0/kanayama/dataset/landmark/results/result4/',
+    parser.add_argument('--out', '-o', default='/data/unagi0/kanayama/dataset/landmark/results/result5/',
                         help='Directory to output the result')
     parser.add_argument('--resume', '-r', default='',
                         help='Resume the training from snapshot')
@@ -134,7 +134,7 @@ def main():
         global_dis, 'dis_iter_{.updater.iteration}.npz'), trigger=snapshot_interval)
     trainer.extend(extensions.LogReport(trigger=display_interval))
     trainer.extend(extensions.PrintReport([
-        'epoch', 'iteration', 'gen/loss', 'dis/loss',
+        'epoch', 'iteration', 'global_dis/loss', 'local_dis/loss', 'gen/loss'
     ]), trigger=display_interval)
     trainer.extend(extensions.ProgressBar(update_interval=10))
     trainer.extend(

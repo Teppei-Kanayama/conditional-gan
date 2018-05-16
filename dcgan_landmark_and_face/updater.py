@@ -67,8 +67,7 @@ class DCGANUpdater(chainer.training.StandardUpdater):
         global_y_fake = global_dis(x_fake)
 
         # local discriminator
-        #pdb.set_trace()
-        local_y_real = local_dis(x_real[:, :, 30:94, 30:94])
+        local_y_real = local_dis(x_patch[:, :, 30:94, 30:94])
         local_y_fake = local_dis(x_fake[:, :, 30:94, 30:94])
 
         #rand_num = random.randint(0, 1)
