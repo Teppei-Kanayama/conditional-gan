@@ -31,9 +31,16 @@ class DCGANUpdater(chainer.training.StandardUpdater):
         chainer.report({'loss': loss}, dis)
         return loss
 
-    def loss_gen(self, gen, global_y_fake, local_y_fake):
+    def loss_gen(self, gen, global_y_fake, local_y_fake, x_concat, x_fake, xp):
+        mask = Variable(xp.zeros((x_fake.shape[0], x_fake.shape[1], 64, 64), dtype=xp.float32))
+        mask = F.pad(mask, ((0, 0), (0, 0), (30, 162),(30, 162)), "constant", constant_values=1)
+        origin = x_concat[:, :3, :, :]
+        origin = origin * mask
+        generated = x_fake * mask
+        reconstruction_loss = F.sum((origin - generated) ** 2, axis=(1, 2, 3)) / (x_fake[0, :, :, :].size)
         batchsize = len(global_y_fake)
-        loss = F.sum(F.softplus(-global_y_fake - local_y_fake)) / batchsize
+        #pdb.set_trace()
+        loss = F.sum(F.softplus(- global_y_fake) + F.softplus(- local_y_fake) + reconstruction_loss[:, xp.newaxis]) / batchsize
         chainer.report({'loss': loss}, gen)
         return loss
 
@@ -44,7 +51,6 @@ class DCGANUpdater(chainer.training.StandardUpdater):
 
         batch = self.get_iterator('main').next()
         patch = self.get_iterator('patch').next()
-        #pdb.set_trace()
 
         x_real = Variable(self.converter(batch, self.device)) / 255.
         x_patch = Variable(self.converter(patch, self.device)) / 255.
@@ -55,9 +61,6 @@ class DCGANUpdater(chainer.training.StandardUpdater):
 
         gen, global_dis, local_dis = self.gen, self.global_dis, self.local_dis
         batchsize = len(batch)
-
-
-        #z = Variable(xp.asarray(gen.make_hidden(batchsize)))
 
         # generatorがfake画像を生成
         x_fake = gen(x_concat)
@@ -70,8 +73,6 @@ class DCGANUpdater(chainer.training.StandardUpdater):
         local_y_real = local_dis(x_patch[:, :, 30:94, 30:94])
         local_y_fake = local_dis(x_fake[:, :, 30:94, 30:94])
 
-        #rand_num = random.randint(0, 1)
-        #if rand_num == 0:
         global_dis_optimizer.update(self.loss_global_dis, global_dis, global_y_fake, global_y_real)
         local_dis_optimizer.update(self.loss_local_dis, local_dis, local_y_fake, local_y_real)
-        gen_optimizer.update(self.loss_gen, gen, global_y_fake, local_y_fake)
+        gen_optimizer.update(self.loss_gen, gen, global_y_fake, local_y_fake, x_concat, x_fake, xp)
