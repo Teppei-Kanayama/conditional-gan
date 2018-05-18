@@ -40,7 +40,8 @@ class DCGANUpdater(chainer.training.StandardUpdater):
         reconstruction_loss = F.sum((origin - generated) ** 2, axis=(1, 2, 3)) / (x_fake[0, :, :, :].size)
         batchsize = len(global_y_fake)
         #pdb.set_trace()
-        loss = F.sum(F.softplus(- global_y_fake) + F.softplus(- local_y_fake) + reconstruction_loss[:, xp.newaxis]) / batchsize
+        loss = F.sum(F.softplus(- global_y_fake) + F.softplus(- local_y_fake) + 50 * reconstruction_loss[:, xp.newaxis]) / batchsize
+        #loss = F.sum(reconstruction_loss[:, xp.newaxis]) / batchsize
         chainer.report({'loss': loss}, gen)
         return loss
 
