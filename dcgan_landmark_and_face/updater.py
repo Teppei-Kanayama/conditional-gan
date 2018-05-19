@@ -7,6 +7,7 @@ import chainer.functions as F
 from chainer import Variable
 
 import random
+import numpy as np
 import pdb
 
 class DCGANUpdater(chainer.training.StandardUpdater):
@@ -31,9 +32,9 @@ class DCGANUpdater(chainer.training.StandardUpdater):
         chainer.report({'loss': loss}, dis)
         return loss
 
-    def loss_gen(self, gen, global_y_fake, local_y_fake, x_concat, x_fake, xp):
+    def loss_gen(self, gen, global_y_fake, local_y_fake, x_concat, x_fake, xp, pos_x, pos_y):
         mask = Variable(xp.zeros((x_fake.shape[0], x_fake.shape[1], 64, 64), dtype=xp.float32))
-        mask = F.pad(mask, ((0, 0), (0, 0), (30, 162),(30, 162)), "constant", constant_values=1)
+        mask = F.pad(mask, ((0, 0), (0, 0), (pos_x, 192 - pos_x),(pos_y, 192 - pos_y)), "constant", constant_values=1)
         origin = x_concat[:, :3, :, :]
         origin = origin * mask
         generated = x_fake * mask
@@ -56,7 +57,11 @@ class DCGANUpdater(chainer.training.StandardUpdater):
         x_real = Variable(self.converter(batch, self.device)) / 255.
         x_patch = Variable(self.converter(patch, self.device)) / 255.
 
-        x_concat = F.concat((x_real, x_patch), axis=1)
+        pos_x = np.random.randint(192) # 30
+        pos_y = np.random.randint(192) # 30
+        x_patch_expanded = F.pad(x_patch, ((0, 0), (0, 0), (pos_x, 192 - pos_x),(pos_y, 192 - pos_y)), "constant", constant_values=0.)
+
+        x_concat = F.concat((x_real, x_patch_expanded), axis=1)
 
         xp = chainer.cuda.get_array_module(x_real.data)
 
@@ -71,9 +76,9 @@ class DCGANUpdater(chainer.training.StandardUpdater):
         global_y_fake = global_dis(x_fake)
 
         # local discriminator
-        local_y_real = local_dis(x_patch[:, :, 30:94, 30:94])
-        local_y_fake = local_dis(x_fake[:, :, 30:94, 30:94])
+        local_y_real = local_dis(x_patch)
+        local_y_fake = local_dis(x_fake[:, :, pos_x:pos_x+64, pos_y:pos_y+64])
 
         global_dis_optimizer.update(self.loss_global_dis, global_dis, global_y_fake, global_y_real)
         local_dis_optimizer.update(self.loss_local_dis, local_dis, local_y_fake, local_y_real)
-        gen_optimizer.update(self.loss_gen, gen, global_y_fake, local_y_fake, x_concat, x_fake, xp)
+        gen_optimizer.update(self.loss_gen, gen, global_y_fake, local_y_fake, x_concat, x_fake, xp, pos_x, pos_y)

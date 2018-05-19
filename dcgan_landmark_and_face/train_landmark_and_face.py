@@ -47,10 +47,10 @@ class PreprocessedDataset2(chainer.dataset.DatasetMixin):
         image = image.transpose((1, 2, 0))
         image = cv2.resize(image, (64, 64))
         image = image.transpose((2, 0, 1)).astype(np.float32)
-        expand_image = np.zeros((3, 256, 256), dtype=np.float32)
-        expand_image[:, 30:94, 30:94] = image
-        return expand_image
-
+        #expand_image = np.zeros((3, 256, 256), dtype=np.float32)
+        #expand_image[:, 30:94, 30:94] = image
+        #return expand_image
+        return image
 
 def main():
     parser = argparse.ArgumentParser(description='Chainer example: DCGAN')

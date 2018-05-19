@@ -18,10 +18,12 @@ def out_generated_image(gen, dis, rows, cols, train_iter, patch_iter, dst):
     @chainer.training.make_extension()
     def make_image(trainer):
         xp = gen.xp
+        images = train_iter.next()
+        patches = patch_iter.next()
 
         for i in range(5):
-            image = train_iter.next()[i]
-            patch = patch_iter.next()[i]
+            image = images[i]
+            patch = patches[i]
 
             #import pdb;pdb.set_trace()
             pil_image = Image.fromarray(np.transpose(image, (1, 2, 0)).astype(np.uint8))
@@ -30,7 +32,12 @@ def out_generated_image(gen, dis, rows, cols, train_iter, patch_iter, dst):
             image = Variable(xp.asarray(image)) / 255.
             patch = Variable(xp.asarray(patch)) / 255.
 
-            concat_image = F.concat((image, patch), axis=0)
+            pos_x = np.random.randint(192) # 30
+            pos_y = np.random.randint(192) # 30
+
+            patch_expanded = F.pad(patch, ((0, 0), (pos_x, 192 - pos_x),(pos_y, 192 - pos_y)), "constant", constant_values=0.)
+
+            concat_image = F.concat((image, patch_expanded), axis=0)
             concat_image = F.expand_dims(concat_image, axis=0)
 
             with chainer.using_config('train', False):
@@ -41,7 +48,7 @@ def out_generated_image(gen, dis, rows, cols, train_iter, patch_iter, dst):
 
             img = x[0].transpose(1, 2, 0) * 255.
             img = img.astype(np.uint8)
-            img_with_bbox = cv2.rectangle(img.copy(),(30, 30),(94,94),(0,255,0),3)
+            img_with_bbox = cv2.rectangle(img.copy(),(pos_x, pos_y),(pos_x+64,pos_y+64),(0,255,0),3)
 
             img = Image.fromarray(img)
             img_with_bbox = Image.fromarray(img_with_bbox)
