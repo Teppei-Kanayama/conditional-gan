@@ -9,11 +9,13 @@ from chainer import Variable
 import random
 import numpy as np
 import pdb
+import math
 
 class DCGANUpdater(chainer.training.StandardUpdater):
 
     def __init__(self, *args, **kwargs):
         self.gen, self.global_dis, self.local_dis = kwargs.pop('models')
+        self.filter = kwargs.pop('filter')
         super(DCGANUpdater, self).__init__(*args, **kwargs)
 
     def loss_global_dis(self, dis, y_fake, y_real):
@@ -33,16 +35,33 @@ class DCGANUpdater(chainer.training.StandardUpdater):
         return loss
 
     def loss_gen(self, gen, global_y_fake, local_y_fake, x_concat, x_fake, xp, pos_x, pos_y):
+
+        # 顔の部分を覆うためのmaskを生成
         mask = Variable(xp.zeros((x_fake.shape[0], x_fake.shape[1], 64, 64), dtype=xp.float32))
         mask = F.pad(mask, ((0, 0), (0, 0), (pos_x, 192 - pos_x),(pos_y, 192 - pos_y)), "constant", constant_values=1)
         origin = x_concat[:, :3, :, :]
         origin = origin * mask
         generated = x_fake * mask
-        reconstruction_loss = F.sum((origin - generated) ** 2, axis=(1, 2, 3)) / (x_fake[0, :, :, :].size)
+
+        # 顔の部分を中心としたガウシアンフィルタ
+        #gauss_filter = xp.zeros((256, 256), dtype=xp.float32)
+        #sigma = 50
+        x0, y0 = pos_x+32, pos_y+32
+
+        #for x in range(256):
+        #    for y in range(256):
+        #        gauss_filter[x][y] = 1 - xp.exp(- ((x - x0) ** 2 + (y - y0) ** 2) / (2 * sigma ** 2))
+        gauss_filter = self.filter[256-x0:512-x0, 256-y0:512-y0]
+        gauss_filter = chainer.cuda.to_gpu(gauss_filter)
+        gauss_filter = Variable(gauss_filter)[xp.newaxis, xp.newaxis]
+        gauss_filter = F.broadcast_to(gauss_filter, origin.shape)
+
+        #再構成誤差
+        #reconstruction_loss = F.sum((origin - generated) ** 2, axis=(1, 2, 3)) / (x_fake[0, :, :, :].size)
+        reconstruction_loss = F.sum(((origin - generated) ** 2) * gauss_filter, axis=(1, 2, 3)) / (x_fake[0, :, :, :].size)
+
         batchsize = len(global_y_fake)
-        #pdb.set_trace()
         loss = F.sum(F.softplus(- global_y_fake) + F.softplus(- local_y_fake) + 500 * reconstruction_loss[:, xp.newaxis]) / batchsize
-        #loss = F.sum(reconstruction_loss[:, xp.newaxis]) / batchsize
         chainer.report({'loss': loss}, gen)
         return loss
 

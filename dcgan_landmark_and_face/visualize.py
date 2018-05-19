@@ -48,7 +48,7 @@ def out_generated_image(gen, dis, rows, cols, train_iter, patch_iter, dst):
 
             img = x[0].transpose(1, 2, 0) * 255.
             img = img.astype(np.uint8)
-            img_with_bbox = cv2.rectangle(img.copy(),(pos_x, pos_y),(pos_x+64,pos_y+64),(0,255,0),3)
+            img_with_bbox = cv2.rectangle(img.copy(),(pos_y, pos_x),(pos_y+64,pos_x+64),(0,255,0),3)
 
             img = Image.fromarray(img)
             img_with_bbox = Image.fromarray(img_with_bbox)

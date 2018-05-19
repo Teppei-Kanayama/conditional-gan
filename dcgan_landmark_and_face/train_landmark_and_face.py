@@ -16,7 +16,7 @@ import pdb
 import numpy as np
 import cv2
 import cProfile
-
+import math
 
 class PreprocessedDataset(chainer.dataset.DatasetMixin):
 
@@ -62,7 +62,7 @@ def main():
                         help='GPU ID (negative value indicates CPU)')
     parser.add_argument('--train', '-i', default='/data/unagi0/kanayama/dataset/landmark/train10000.txt',
                         help='Directory of image files.  Default is cifar-10.')
-    parser.add_argument('--out', '-o', default='/data/unagi0/kanayama/dataset/landmark/results/tmp',
+    parser.add_argument('--out', '-o', default='/data/unagi0/kanayama/dataset/landmark/results/result12',
                         help='Directory to output the result')
     parser.add_argument('--resume', '-r', default='',
                         help='Resume the training from snapshot')
@@ -70,7 +70,7 @@ def main():
                         help='Number of hidden units (z)')
     parser.add_argument('--seed', type=int, default=0,
                         help='Random seed of z at visualization stage')
-    parser.add_argument('--snapshot_interval', type=int, default=10000,
+    parser.add_argument('--snapshot_interval', type=int, default=2000,
                         help='Interval of snapshot')
     parser.add_argument('--display_interval', type=int, default=100,
                         help='Interval of displaying log to console')
@@ -84,6 +84,15 @@ def main():
     print('# n_hidden: {}'.format(args.n_hidden))
     print('# epoch: {}'.format(args.epoch))
     print('')
+
+    gauss_filter = np.zeros((256 * 2, 256 * 2), dtype=np.float32)
+    sigma = 50
+    x0 = y0 = 256
+
+    for x in range(256 * 2):
+        for y in range(256 * 2):
+            gauss_filter[x][y] = 1 - np.exp(- ((x - x0) ** 2 + (y - y0) ** 2) / (2 * sigma ** 2))
+
 
     # Set up a neural network to train
     gen = Generator(n_hidden=args.n_hidden)
@@ -116,6 +125,7 @@ def main():
     # Set up a trainer
     updater = DCGANUpdater(
         models=(gen, global_dis, local_dis),
+        filter = gauss_filter,
         iterator={
             'main': train_iter, 'patch': patch_iter},
         optimizer={
