@@ -37,13 +37,13 @@ def out_generated_image(gen, dis, rows, cols, train_iter, patch_iter, dst):
         x = chainer.cuda.to_cpu(x.data)
 
         #pdb.set_trace()
-        #img_with_bbox = cv2.rectangle((x[0] * 255).astype(np.uint8),(30, 30),(94,94),(0,255,0),3)
 
         img = x[0].transpose(1, 2, 0) * 255.
         img = img.astype(np.uint8)
+        img_with_bbox = cv2.rectangle(img.copy(),(30, 30),(94,94),(0,255,0),3)
 
         img = Image.fromarray(img)
-        #img_with_bbox = Image.fromarray(np.transpose(img_with_bbox, (1, 2, 0)))
+        img_with_bbox = Image.fromarray(img_with_bbox)
 
         preview_dir = '{}/preview'.format(dst)
         preview_path = preview_dir +\
@@ -52,7 +52,7 @@ def out_generated_image(gen, dis, rows, cols, train_iter, patch_iter, dst):
             os.makedirs(preview_dir)
 
         img.save(preview_path)
-        #img_with_bbox.save(preview_path + "_bbox.png")
+        img_with_bbox.save(preview_path + "_bbox.png")
         pil_image.save(preview_path + "_landscape.png")
         pil_patch.save(preview_path + "_face.png")
 

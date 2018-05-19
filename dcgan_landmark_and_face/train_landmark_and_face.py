@@ -62,7 +62,7 @@ def main():
                         help='GPU ID (negative value indicates CPU)')
     parser.add_argument('--train', '-i', default='/data/unagi0/kanayama/dataset/landmark/train10000.txt',
                         help='Directory of image files.  Default is cifar-10.')
-    parser.add_argument('--out', '-o', default='/data/unagi0/kanayama/dataset/landmark/results/result9/',
+    parser.add_argument('--out', '-o', default='/data/unagi0/kanayama/dataset/landmark/results/tmp',
                         help='Directory to output the result')
     parser.add_argument('--resume', '-r', default='',
                         help='Resume the training from snapshot')
