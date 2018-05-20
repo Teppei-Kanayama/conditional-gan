@@ -60,9 +60,9 @@ def main():
                         help='Number of sweeps over the dataset to train')
     parser.add_argument('--gpu', '-g', type=int, default=-1,
                         help='GPU ID (negative value indicates CPU)')
-    parser.add_argument('--train', '-i', default='/data/unagi0/kanayama/dataset/landmark/train10000.txt',
+    parser.add_argument('--train', '-i', default='/data/ugui0/kanayama/landmark_large.txt',
                         help='Directory of image files.  Default is cifar-10.')
-    parser.add_argument('--out', '-o', default='/data/unagi0/kanayama/dataset/landmark/results/result12',
+    parser.add_argument('--out', '-o', default='/data/unagi0/kanayama/dataset/landmark/results/result15',
                         help='Directory to output the result')
     parser.add_argument('--resume', '-r', default='',
                         help='Resume the training from snapshot')
@@ -74,7 +74,7 @@ def main():
                         help='Interval of snapshot')
     parser.add_argument('--display_interval', type=int, default=100,
                         help='Interval of displaying log to console')
-    parser.add_argument('--root', '-R', default='/data/ugui0/kanayama/landmark',
+    parser.add_argument('--root', '-R', default='/data/ugui0/kanayama/train',
                         help='Root directory path of image files')
 
     args = parser.parse_args()

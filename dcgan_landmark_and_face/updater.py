@@ -40,17 +40,12 @@ class DCGANUpdater(chainer.training.StandardUpdater):
         mask = Variable(xp.zeros((x_fake.shape[0], x_fake.shape[1], 64, 64), dtype=xp.float32))
         mask = F.pad(mask, ((0, 0), (0, 0), (pos_x, 192 - pos_x),(pos_y, 192 - pos_y)), "constant", constant_values=1)
         origin = x_concat[:, :3, :, :]
-        origin = origin * mask
-        generated = x_fake * mask
+        #origin = origin * mask
+        #generated = x_fake * mask
+        origin = origin
+        generated = x_fake
 
-        # 顔の部分を中心としたガウシアンフィルタ
-        #gauss_filter = xp.zeros((256, 256), dtype=xp.float32)
-        #sigma = 50
         x0, y0 = pos_x+32, pos_y+32
-
-        #for x in range(256):
-        #    for y in range(256):
-        #        gauss_filter[x][y] = 1 - xp.exp(- ((x - x0) ** 2 + (y - y0) ** 2) / (2 * sigma ** 2))
         gauss_filter = self.filter[256-x0:512-x0, 256-y0:512-y0]
         gauss_filter = chainer.cuda.to_gpu(gauss_filter)
         gauss_filter = Variable(gauss_filter)[xp.newaxis, xp.newaxis]
